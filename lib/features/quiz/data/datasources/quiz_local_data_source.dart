@@ -5,32 +5,39 @@ import '../models/user_model.dart';
 
 abstract class QuizLocalDataSource {
   Future<void> cacheUser(UserModel user);
-  Future<UserModel? > getCachedUser();
+  Future<UserModel?> getCachedUser();
   Future<void> clearCache();
 }
 
 class QuizLocalDataSourceImpl implements QuizLocalDataSource {
-  final SharedPreferences sharedPreferences;
+  SharedPreferences?  _sharedPreferences;
 
-  QuizLocalDataSourceImpl({required this.sharedPreferences});
+  // Get SharedPreferences instance
+  Future<SharedPreferences> get _prefs async {
+    _sharedPreferences ??= await SharedPreferences.getInstance();
+    return _sharedPreferences!;
+  }
 
   @override
   Future<void> cacheUser(UserModel user) async {
+    final prefs = await _prefs;
     final jsonString = json.encode(user.toJson());
-    await sharedPreferences. setString(AppConstants.userDataKey, jsonString);
+    await prefs.setString(AppConstants. userDataKey, jsonString);
   }
 
   @override
   Future<UserModel?> getCachedUser() async {
-    final jsonString = sharedPreferences.getString(AppConstants.userDataKey);
+    final prefs = await _prefs;
+    final jsonString = prefs.getString(AppConstants.userDataKey);
     if (jsonString != null) {
-      return UserModel.fromJson(json. decode(jsonString));
+      return UserModel.fromJson(json.decode(jsonString));
     }
     return null;
   }
 
   @override
   Future<void> clearCache() async {
-    await sharedPreferences.remove(AppConstants.userDataKey);
+    final prefs = await _prefs;
+    await prefs.remove(AppConstants.userDataKey);
   }
 }

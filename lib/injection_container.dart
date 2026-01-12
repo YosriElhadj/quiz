@@ -1,7 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'features/quiz/data/datasources/quiz_local_data_source.dart';
 import 'features/quiz/data/datasources/quiz_remote_data_source.dart';
 import 'features/quiz/data/repositories/quiz_repository_impl.dart';

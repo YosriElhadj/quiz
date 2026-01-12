@@ -24,7 +24,7 @@ dependencies:
   intl: ^0.18.1
   
   # Local Storage
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.5.3
   
   # HTTP & AI Integration
   http: ^1.1.0
