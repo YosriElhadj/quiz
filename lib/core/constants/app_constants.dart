@@ -14,8 +14,9 @@ class AppConstants {
   static const String userDataKey = 'user_data';
   static const String quizResultsKey = 'quiz_results';
   
-  // App Settings
-  static const int numberOfQuestions = 10;
+ // App Settings - UPDATED FOR BETTER ASSESSMENT
+  static const int numberOfQuestions = 25; // Increased from 10
+  static const int answersPerQuestion = 4; // Multiple choice options
   static const Duration animationDuration = Duration(milliseconds: 300);
   
   // Theme Colors - Beautiful gradient
