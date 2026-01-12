@@ -7,7 +7,7 @@ import '../widgets/question_card.dart';
 import 'result_screen.dart';
 
 class QuizScreen extends StatefulWidget {
-  const QuizScreen({Key?  key}) : super(key: key);
+  const QuizScreen({Key? key}) : super(key: key);
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -30,14 +30,19 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
       body: BlocConsumer<QuizBloc, QuizState>(
         listener: (context, state) {
+          print('🔔 Quiz state changed: ${state. runtimeType}');
+          
           if (state is QuizCompleted) {
-            Navigator.pushReplacement(
+            print('✅ Quiz completed!  Navigating to results...');
+            // Navigate to result screen
+            Navigator. pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (context) => const ResultScreen(),
               ),
             );
           } else if (state is QuizError) {
+            print('❌ Quiz error:  ${state.message}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -54,10 +59,10 @@ class _QuizScreenState extends State<QuizScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height:  16),
                   Text(
-                    'Loading questions...',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    'Loading.. .',
+                    style: Theme. of(context).textTheme.titleMedium,
                   ),
                 ],
               ),
@@ -65,11 +70,28 @@ class _QuizScreenState extends State<QuizScreen> {
           }
 
           if (state is QuestionsLoaded) {
-            // FIX: Check if currentQuestionIndex is within bounds
-            if (state.currentQuestionIndex >= state.questions.length) {
-              // This shouldn't happen, but handle it gracefully
-              return const Center(
-                child: CircularProgressIndicator(),
+            // Check if we've answered all questions
+            if (state. currentQuestionIndex >= state.questions.length) {
+              print('⚠️ Out of bounds!  Index: ${state.currentQuestionIndex}, Length: ${state.questions. length}');
+              // Automatically submit if we're past the last question
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  context.read<QuizBloc>().add(SubmitQuizEvent());
+                }
+              });
+              
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Calculating your results...',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
+                ),
               );
             }
 
@@ -77,16 +99,15 @@ class _QuizScreenState extends State<QuizScreen> {
             
             return LayoutBuilder(
               builder: (context, constraints) {
-                // Responsive design
                 final isSmallScreen = constraints.maxWidth < 600;
                 final padding = isSmallScreen ? 16.0 : 32.0;
                 
                 return Column(
                   children: [
-                    // Progress Bar with Animation
+                    // Progress Bar
                     TweenAnimationBuilder<double>(
-                      duration: const Duration(milliseconds: 300),
-                      tween: Tween(begin: 0, end: state.progress),
+                      duration:  const Duration(milliseconds: 300),
+                      tween:  Tween(begin: 0, end: state.progress),
                       builder: (context, value, child) {
                         return LinearProgressIndicator(
                           value: value,
@@ -103,12 +124,12 @@ class _QuizScreenState extends State<QuizScreen> {
                     Container(
                       padding: EdgeInsets.all(padding),
                       child:  Row(
-                        mainAxisAlignment:  MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Flexible(
                             child: Text(
                               'Question ${state.currentQuestionIndex + 1} of ${state. questions.length}',
-                              style: Theme.of(context).textTheme.titleMedium?. copyWith(
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -120,13 +141,13 @@ class _QuizScreenState extends State<QuizScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.primaryContainer,
-                              borderRadius:  BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               '${(state.progress * 100).toInt()}%',
-                              style: Theme. of(context).textTheme.titleSmall?.copyWith(
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: Theme. of(context).colorScheme.onPrimaryContainer,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
                               ),
                             ),
                           ),
@@ -143,18 +164,22 @@ class _QuizScreenState extends State<QuizScreen> {
                           child: QuestionCard(
                             question: question,
                             onAnswerSelected: (answer) {
+                              print('👆 Answer selected for question ${state.currentQuestionIndex + 1}');
+                              
+                              // Add answer
                               context.read<QuizBloc>().add(
                                 AnswerQuestionEvent(
                                   questionId: question.id,
                                   answerId: answer.id,
-                                  personalityType: answer.personalityType,
+                                  personalityType: answer. personalityType,
                                   score: answer.score,
                                 ),
                               );
 
-                              // If last question, submit quiz after a short delay
-                              if (state. isLastQuestion) {
-                                Future.delayed(const Duration(milliseconds: 500), () {
+                              // If last question, submit after delay
+                              if (state.isLastQuestion) {
+                                print('🏁 Last question!  Submitting quiz...');
+                                Future.delayed(const Duration(milliseconds: 800), () {
                                   if (context.mounted) {
                                     context.read<QuizBloc>().add(SubmitQuizEvent());
                                   }
@@ -177,7 +202,7 @@ class _QuizScreenState extends State<QuizScreen> {
               children: [
                 Icon(
                   Icons.error_outline,
-                  size:  64,
+                  size: 64,
                   color: Colors.grey[400],
                 ),
                 const SizedBox(height: 16),
@@ -187,7 +212,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 ),
                 const SizedBox(height: 8),
                 TextButton(
-                  onPressed:  () {
+                  onPressed: () {
                     context.read<QuizBloc>().add(LoadQuestionsEvent());
                   },
                   child: const Text('Try Again'),

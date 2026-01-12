@@ -36,8 +36,11 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     final result = await getQuestions(NoParams());
 
     result.fold(
-      (failure) => emit(QuizError(failure.message)),
-      (questions) => emit(QuestionsLoaded(questions: questions)),
+      (failure) => emit(QuizError(failure. message)),
+      (questions) {
+        print('✅ Loaded ${questions.length} questions');
+        emit(QuestionsLoaded(questions:  questions));
+      },
     );
   }
 
@@ -48,20 +51,24 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     if (state is QuestionsLoaded) {
       final currentState = state as QuestionsLoaded;
       
-      final updatedAnswers = Map<String, int>.from(currentState. answers);
+      print('📝 Answering question ${currentState.currentQuestionIndex + 1}');
+      print('   Answer: ${event.personalityType} (score: ${event.score})');
+      
+      final updatedAnswers = Map<String, int>.from(currentState.answers);
       updatedAnswers[event.personalityType] = 
-          (updatedAnswers[event. personalityType] ?? 0) + event.score;
+          (updatedAnswers[event.personalityType] ?? 0) + event.score;
 
-      // FIX: Don't increment beyond the last question
+      // Move to next question
       final nextIndex = currentState.currentQuestionIndex + 1;
       
-      // Only update if we haven't exceeded the questions
-      if (nextIndex <= currentState.questions.length) {
-        emit(currentState. copyWith(
-          currentQuestionIndex: nextIndex,
-          answers: updatedAnswers,
-        ));
-      }
+      print('   Next index: $nextIndex / ${currentState.questions.length}');
+      print('   Current answers: $updatedAnswers');
+      
+      // Update state with new answers and index
+      emit(currentState.copyWith(
+        currentQuestionIndex: nextIndex,
+        answers: updatedAnswers,
+      ));
     }
   }
 
@@ -69,16 +76,32 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     SubmitQuizEvent event,
     Emitter<QuizState> emit,
   ) async {
+    print('🎯 Submitting quiz.. .');
+    
     if (state is QuestionsLoaded) {
       final currentState = state as QuestionsLoaded;
+      
+      print('📊 Final answers: ${currentState.answers}');
+      
+      // Show loading
       emit(QuizLoading());
 
-      final result = await calculateResult(currentState.answers);
+      // Calculate result
+      final result = await calculateResult(currentState. answers);
 
       result.fold(
-        (failure) => emit(QuizError(failure.message)),
-        (personalityResult) => emit(QuizCompleted(result: personalityResult)),
+        (failure) {
+          print('❌ Calculate result failed: ${failure.message}');
+          emit(QuizError(failure.message));
+        },
+        (personalityResult) {
+          print('✅ Result calculated:  ${personalityResult.type}');
+          emit(QuizCompleted(result: personalityResult));
+        },
       );
+    } else {
+      print('❌ Cannot submit - state is not QuestionsLoaded');
+      emit(QuizError('Invalid state for submission'));
     }
   }
 
@@ -91,7 +114,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     final result = await saveUser(event.user);
 
     result.fold(
-      (failure) => emit(QuizError(failure.message)),
+      (failure) => emit(QuizError(failure. message)),
       (_) => emit(UserSaved(event.user)),
     );
   }
@@ -108,6 +131,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       result.fold(
         (failure) {
           // Keep current state even if AI fails
+          print('⚠️ AI insights failed: ${failure.message}');
         },
         (insights) {
           emit(currentState.copyWith(aiInsights: insights));
@@ -120,6 +144,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     ResetQuizEvent event,
     Emitter<QuizState> emit,
   ) {
+    print('🔄 Resetting quiz');
     emit(QuizInitial());
   }
 }
