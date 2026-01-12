@@ -48,16 +48,20 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     if (state is QuestionsLoaded) {
       final currentState = state as QuestionsLoaded;
       
-      final updatedAnswers = Map<String, int>.from(currentState.answers);
+      final updatedAnswers = Map<String, int>.from(currentState. answers);
       updatedAnswers[event.personalityType] = 
           (updatedAnswers[event. personalityType] ?? 0) + event.score;
 
+      // FIX: Don't increment beyond the last question
       final nextIndex = currentState.currentQuestionIndex + 1;
-
-      emit(currentState.copyWith(
-        currentQuestionIndex: nextIndex,
-        answers: updatedAnswers,
-      ));
+      
+      // Only update if we haven't exceeded the questions
+      if (nextIndex <= currentState.questions.length) {
+        emit(currentState. copyWith(
+          currentQuestionIndex: nextIndex,
+          answers: updatedAnswers,
+        ));
+      }
     }
   }
 

@@ -15,8 +15,75 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
 
   @override
   Future<List<QuestionModel>> getQuestions() async {
-    // For now, return static questions.  Later we can fetch from API
-    return _getStaticQuestions();
+    // Use Open Trivia Database API for real questions
+    try {
+      final response = await client.get(
+        Uri.parse('https://opentdb.com/api.php?amount=10&type=multiple'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final results = data['results'] as List;
+        
+        // Convert trivia questions to personality quiz format
+        return results.asMap().entries.map((entry) {
+          final index = entry. key;
+          final question = entry.value;
+          
+          // Decode HTML entities
+          final questionText = _decodeHtmlEntities(question['question']);
+          final correctAnswer = _decodeHtmlEntities(question['correct_answer']);
+          final incorrectAnswers = (question['incorrect_answers'] as List)
+              .map((a) => _decodeHtmlEntities(a))
+              .toList();
+          
+          // Map to personality types based on question index
+          final personalityTypes = [
+            'Extrovert', 'Introvert', 'Thinker', 'Feeler',
+            'Judger', 'Perceiver', 'Analytical', 'Creative',
+            'Leader', 'Supporter'
+          ];
+          
+          return QuestionModel(
+            id:  'q${index + 1}',
+            text:  questionText,
+            category: question['category'],
+            answers: [
+              AnswerModel(
+                id: 'q${index + 1}a1',
+                text: correctAnswer,
+                personalityType: personalityTypes[index % personalityTypes.length],
+                score: 5,
+              ),
+              AnswerModel(
+                id: 'q${index + 1}a2',
+                text: incorrectAnswers[0],
+                personalityType: personalityTypes[(index + 1) % personalityTypes.length],
+                score: 3,
+              ),
+            ],
+          );
+        }).toList();
+      } else {
+        // Fallback to static questions if API fails
+        return _getStaticQuestions();
+      }
+    } catch (e) {
+      // Fallback to static questions if network fails
+      return _getStaticQuestions();
+    }
+  }
+
+  String _decodeHtmlEntities(String text) {
+    return text
+        .replaceAll('&quot;', '"')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&apos;', "'")
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&#039;', "'")
+        .replaceAll('&ldquo;', '"')
+        .replaceAll('&rdquo;', '"');
   }
 
   @override
@@ -47,7 +114,7 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response. body);
+        final data = json. decode(response.body);
         return data['choices'][0]['message']['content'];
       } else {
         throw Exception('Failed to get AI insights');
@@ -58,7 +125,7 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
     }
   }
 
-  // Static questions for the quiz
+  // Static questions as fallback
   List<QuestionModel> _getStaticQuestions() {
     return [
       const QuestionModel(
@@ -70,12 +137,12 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
             id: 'q1a1',
             text: 'Interact with many people, including strangers',
             personalityType: 'Extrovert',
-            score:  5,
+            score: 5,
           ),
           AnswerModel(
             id: 'q1a2',
-            text: 'Interact with a few close friends',
-            personalityType:  'Introvert',
+            text:  'Interact with a few close friends',
+            personalityType: 'Introvert',
             score: 5,
           ),
         ],
@@ -92,7 +159,7 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
             score: 5,
           ),
           AnswerModel(
-            id:  'q2a2',
+            id: 'q2a2',
             text: 'Personal values and feelings',
             personalityType: 'Feeler',
             score: 5,
@@ -100,14 +167,14 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
         ],
       ),
       const QuestionModel(
-        id: 'q3',
+        id:  'q3',
         text: 'You prefer to:',
         category: 'Planning',
         answers: [
           AnswerModel(
             id: 'q3a1',
             text: 'Have things decided and organized',
-            personalityType: 'Judger',
+            personalityType:  'Judger',
             score: 5,
           ),
           AnswerModel(
@@ -119,135 +186,135 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
         ],
       ),
       const QuestionModel(
-        id: 'q4',
-        text: 'You are more interested in:',
-        category:  'Information',
+        id:  'q4',
+        text: 'When learning something new, you prefer:',
+        category: 'Learning',
         answers: [
           AnswerModel(
             id: 'q4a1',
             text: 'Concrete facts and details',
-            personalityType: 'Sensor',
-            score: 5,
+            personalityType: 'Analytical',
+            score:  5,
           ),
           AnswerModel(
             id: 'q4a2',
-            text: 'Patterns and possibilities',
-            personalityType: 'Intuitive',
+            text: 'Abstract concepts and theories',
+            personalityType: 'Creative',
             score: 5,
           ),
         ],
       ),
       const QuestionModel(
         id: 'q5',
-        text: 'In your free time, you: ',
-        category: 'Social',
+        text: 'In a group project, you tend to:',
+        category: 'Leadership',
         answers: [
           AnswerModel(
             id: 'q5a1',
-            text: 'Seek adventure and new experiences',
-            personalityType: 'Extrovert',
-            score: 4,
+            text: 'Take charge and lead',
+            personalityType: 'Leader',
+            score: 5,
           ),
           AnswerModel(
             id: 'q5a2',
-            text: 'Enjoy quiet activities alone or with close friends',
-            personalityType:  'Introvert',
-            score: 4,
+            text: 'Support and assist others',
+            personalityType:  'Supporter',
+            score: 5,
           ),
         ],
       ),
       const QuestionModel(
         id: 'q6',
-        text: 'When working on a project, you:',
-        category:  'Planning',
+        text: 'Your ideal weekend involves:',
+        category: 'Lifestyle',
         answers: [
           AnswerModel(
             id: 'q6a1',
-            text: 'Create a detailed plan and stick to it',
-            personalityType: 'Judger',
-            score: 5,
+            text: 'Going out and socializing',
+            personalityType:  'Extrovert',
+            score:  5,
           ),
           AnswerModel(
             id: 'q6a2',
-            text: 'Go with the flow and adapt as needed',
-            personalityType: 'Perceiver',
-            score:  5,
-          ),
-        ],
-      ),
-      const QuestionModel(
-        id: 'q7',
-        text: 'You are more comfortable with:',
-        category: 'Thinking',
-        answers: [
-          AnswerModel(
-            id: 'q7a1',
-            text: 'Debating ideas and being direct',
-            personalityType: 'Thinker',
-            score: 5,
-          ),
-          AnswerModel(
-            id: 'q7a2',
-            text: 'Maintaining harmony and being tactful',
-            personalityType:  'Feeler',
-            score: 5,
-          ),
-        ],
-      ),
-      const QuestionModel(
-        id: 'q8',
-        text: 'You learn best through:',
-        category:  'Information',
-        answers:  [
-          AnswerModel(
-            id: 'q8a1',
-            text: 'Hands-on experience and practice',
-            personalityType: 'Sensor',
-            score:  5,
-          ),
-          AnswerModel(
-            id: 'q8a2',
-            text: 'Theory and conceptual understanding',
-            personalityType: 'Intuitive',
-            score: 5,
-          ),
-        ],
-      ),
-      const QuestionModel(
-        id: 'q9',
-        text: 'After a long week, you feel recharged by:',
-        category:  'Social',
-        answers:  [
-          AnswerModel(
-            id: 'q9a1',
-            text: 'Going out and socializing',
-            personalityType: 'Extrovert',
-            score: 5,
-          ),
-          AnswerModel(
-            id: 'q9a2',
-            text: 'Spending time alone to reflect',
+            text: 'Staying in and relaxing',
             personalityType: 'Introvert',
             score: 5,
           ),
         ],
       ),
       const QuestionModel(
-        id:  'q10',
-        text: 'You are drawn to ideas that are:',
-        category: 'Information',
+        id: 'q7',
+        text: 'When faced with a problem, you: ',
+        category: 'Problem-Solving',
+        answers:  [
+          AnswerModel(
+            id: 'q7a1',
+            text: 'Analyze it systematically',
+            personalityType:  'Thinker',
+            score: 5,
+          ),
+          AnswerModel(
+            id:  'q7a2',
+            text: 'Trust your gut feeling',
+            personalityType: 'Feeler',
+            score: 5,
+          ),
+        ],
+      ),
+      const QuestionModel(
+        id:  'q8',
+        text: 'You are more comfortable with:',
+        category: 'Structure',
         answers: [
           AnswerModel(
+            id: 'q8a1',
+            text: 'Plans and schedules',
+            personalityType:  'Judger',
+            score: 5,
+          ),
+          AnswerModel(
+            id: 'q8a2',
+            text: 'Spontaneity and flexibility',
+            personalityType: 'Perceiver',
+            score: 5,
+          ),
+        ],
+      ),
+      const QuestionModel(
+        id: 'q9',
+        text: 'Your approach to work is:',
+        category: 'Work Style',
+        answers: [
+          AnswerModel(
+            id: 'q9a1',
+            text: 'Detail-oriented and precise',
+            personalityType: 'Analytical',
+            score: 5,
+          ),
+          AnswerModel(
+            id: 'q9a2',
+            text: 'Big-picture and innovative',
+            personalityType: 'Creative',
+            score: 5,
+          ),
+        ],
+      ),
+      const QuestionModel(
+        id: 'q10',
+        text: 'In conflicts, you prefer to:',
+        category: 'Conflict Resolution',
+        answers:  [
+          AnswerModel(
             id: 'q10a1',
-            text: 'Practical and proven',
-            personalityType: 'Sensor',
+            text: 'Address issues directly',
+            personalityType:  'Leader',
             score:  5,
           ),
           AnswerModel(
             id: 'q10a2',
-            text: 'Novel and innovative',
-            personalityType: 'Intuitive',
-            score: 5,
+            text: 'Find compromise and harmony',
+            personalityType: 'Supporter',
+            score:  5,
           ),
         ],
       ),
@@ -255,17 +322,16 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
   }
 
   String _getFallbackInsights(String personalityType) {
-    final insights = {
-      'Extrovert':  'You thrive in social situations and gain energy from interactions.  Consider careers in sales, teaching, or event management.',
-      'Introvert': 'You excel in focused, deep work and recharge through solitude. Consider careers in writing, research, or programming.',
-      'Thinker': 'You make decisions based on logic and objective analysis.  Great for careers in engineering, law, or data science.',
-      'Feeler':  'You value harmony and consider people\'s feelings.  Excellent for counseling, HR, or social work.',
-      'Judger': 'You prefer structure and planning. Perfect for project management, accounting, or administration.',
-      'Perceiver':  'You adapt easily and keep options open. Great for entrepreneurship, creative fields, or consulting.',
-      'Sensor': 'You focus on concrete facts and details. Ideal for healthcare, construction, or quality assurance.',
-      'Intuitive': 'You see patterns and possibilities.  Perfect for strategy, innovation, or research roles.',
-    };
-    
-    return insights[personalityType] ?? 'You have a unique personality with many strengths!';
+    return '''
+Based on your $personalityType personality type: 
+
+• You have unique strengths that set you apart
+• Consider leveraging your natural tendencies in your daily life
+• Balance is key - work on areas that don't come as naturally
+• Your personality type suggests certain career paths may be more fulfilling
+• Remember, personality is fluid and can develop over time
+
+For more detailed insights, consider taking additional assessments or consulting with a professional. 
+    ''';
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../domain/entities/question.dart';
 
 class QuestionCard extends StatelessWidget {
@@ -8,64 +7,100 @@ class QuestionCard extends StatelessWidget {
 
   const QuestionCard({
     Key? key,
-    required this.question,
-    required this. onAnswerSelected,
+    required this. question,
+    required this.onAnswerSelected,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Question Text
-          Card(
-            elevation: 4,
-            child:  Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Text(
-                question.text,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight. w600,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 600;
+        
+        return Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius:  BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: EdgeInsets.all(isSmallScreen ? 20.0 : 32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment. center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Category Badge
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      question. category. toUpperCase(),
+                      style:  Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
+                
+                SizedBox(height: isSmallScreen ? 24 : 32),
+                
+                // Question Text
+                Text(
+                  question.text,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    height: 1.3,
+                  ),
+                  textAlign:  TextAlign.center,
+                ),
+                
+                SizedBox(height: isSmallScreen ? 32 : 48),
+                
+                // Answer Options
+                ... question.answers.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final answer = entry.value;
+                  
+                  return Padding(
+                    padding: EdgeInsets. only(
+                      bottom: index < question.answers.length - 1 ? 16.0 : 0,
+                    ),
+                    child: _AnswerButton(
+                      answer: answer,
+                      onPressed: () => onAnswerSelected(answer),
+                      isSmallScreen: isSmallScreen,
+                    ),
+                  );
+                }).toList(),
+              ],
             ),
-          ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.2, end: 0),
-          
-          const SizedBox(height: 40),
-          
-          // Answer Options
-          ... question.answers.asMap().entries.map((entry) {
-            final index = entry.key;
-            final answer = entry.value;
-            
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: _AnswerButton(
-                answer: answer,
-                onTap: () => onAnswerSelected(answer),
-              ).animate(delay: (200 * index).ms)
-                  .fadeIn(duration: 400.ms)
-                  .slideX(begin: 0.3, end: 0),
-            );
-          }).toList(),
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 }
 
 class _AnswerButton extends StatefulWidget {
   final Answer answer;
-  final VoidCallback onTap;
+  final VoidCallback onPressed;
+  final bool isSmallScreen;
 
   const _AnswerButton({
+    Key? key,
     required this.answer,
-    required this.onTap,
-  });
+    required this.onPressed,
+    required this.isSmallScreen,
+  }) : super(key: key);
 
   @override
   State<_AnswerButton> createState() => _AnswerButtonState();
@@ -76,38 +111,29 @@ class _AnswerButtonState extends State<_AnswerButton> {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        setState(() => _isPressed = true);
-        Future.delayed(const Duration(milliseconds: 200), () {
-          widget.onTap();
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: _isPressed
-              ? Theme.of(context).colorScheme.primary
-              :  Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.primary,
-            width: 2,
+    return AnimatedScale(
+      scale: _isPressed ? 0.95 : 1.0,
+      duration: const Duration(milliseconds: 100),
+      child: ElevatedButton(
+        onPressed: () {
+          setState(() => _isPressed = true);
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted) {
+              widget. onPressed();
+            }
+          });
+        },
+        style:  ElevatedButton.styleFrom(
+          padding: EdgeInsets.all(widget.isSmallScreen ?  20.0 : 24.0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          elevation: 2,
         ),
-        padding: const EdgeInsets.all(20.0),
         child: Text(
-          widget.answer.text,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: _isPressed ? Colors.white : Colors.black87,
-            fontWeight: FontWeight.w500,
+          widget.answer. text,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
           textAlign: TextAlign.center,
         ),

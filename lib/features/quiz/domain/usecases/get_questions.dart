@@ -4,7 +4,7 @@ import '../../../../core/usecases/usecase.dart';
 import '../entities/question.dart';
 import '../repositories/quiz_repository.dart';
 
-class GetQuestions implements UseCase<List<Question>, NoParams> {
+class GetQuestions implements UseCase<List<Question>,NoParams> {
   final QuizRepository repository;
 
   GetQuestions(this.repository);

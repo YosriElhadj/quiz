@@ -93,7 +93,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
             }
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24. 0),
+              padding: const EdgeInsets.all(24.0),
               child: Form(
                 key: _formKey,
                 child: Column(
